@@ -6,7 +6,7 @@
 
 - name: Download OpenShift installer tarball
   ansible.builtin.get_url:
-    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.16.19/openshift-install-linux.tar.gz"
+    url: "{{ openshift_installer_url }}"
     dest: /tmp/openshift-install-linux.tar.gz
 
 - name: Extract OpenShift installer

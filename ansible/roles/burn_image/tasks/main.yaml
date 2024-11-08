@@ -31,7 +31,7 @@
     line: |
       menuentry 'RHCOS' {
           set root={{ grub_root }}
-          linux /images/pxeboot/vmlinuz root=/dev/{{ root_disk }}{{ iso_partition_number }} rw coreos.liveiso=rhcos-416.94.202406251923-0 ignition.firstboot coreos.inst.ignition_url={{ ignition_url }} coreos.inst.install_dev=/dev/{{ rhcos_disk }} coreos.inst.skip_reboot
+          linux /images/pxeboot/vmlinuz root=/dev/{{ root_disk }}{{ iso_partition_number }} rw coreos.liveiso=rhcos-416.94.202406251923-0 ignition.firstboot ignition.platform.id=metal coreos.inst.ignition_url={{ ignition_url }} coreos.inst.install_dev=/dev/{{ rhcos_disk }} coreos.inst.skip_reboot
           initrd /images/pxeboot/initrd.img /images/ignition.img
       }
     create: yes

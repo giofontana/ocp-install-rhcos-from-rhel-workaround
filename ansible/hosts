@@ -27,3 +27,4 @@ root_disk=vda
 iso_partition_number=4
 rhcos_disk=vdc
 grub_root="(hd0,4)"
+openshift_installer_url="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.16.19/openshift-install-linux.tar.gz"
