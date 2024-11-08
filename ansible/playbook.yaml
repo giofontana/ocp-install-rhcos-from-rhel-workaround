@@ -1,0 +1,147 @@
+
+########
+# Prepare image on bastion
+# Run one time only
+########
+
+- hosts: bastion
+  roles:
+    - preparation
+  tags:
+    - preparation
+
+########
+# Create new partition, burn image in it and change grub to boot from it
+# Run on bootstrap first
+########
+- hosts: bootstrap
+  become: yes
+  roles:
+    - burn_image
+  tags:
+    - burn_image_bootstrap
+
+- hosts: localhost
+  tasks:
+    - name: Remove ~/.ssh/known_hosts
+      command: "rm -f ~/.ssh/known_hosts"  
+  tags:
+    - node_deploy_bootstrap   
+
+########
+# Wait node to be back online after boot. 
+# Run on bootstrap first
+########
+- hosts: bootstrap
+  gather_facts: false
+  tasks:
+    - name: Wait for connection to host, retrying every 5 minutes for up to 30 minutes
+      wait_for_connection:
+        timeout: 120
+      retries: 6      # Retry 6 times (6 * 5 minutes = 30 minutes)
+      delay: 300      # 300 seconds (5 minutes) delay between retries
+      register: connection_check
+      until: connection_check is success
+  tags:
+    - node_deploy_bootstrap     
+
+########
+# Shutdown node and wait for user to remove root disk from VM or change boot order
+# Run on bootstrap first
+########
+- hosts: bootstrap
+  become: yes
+  roles:
+    - node_deploy
+  tags:
+    - node_deploy_bootstrap
+
+########
+# Repeat first step for master nodes
+########
+- hosts: masters
+  become: yes
+  roles:
+    - burn_image
+  tags:
+    - burn_image_masters  
+
+- hosts: localhost
+  tasks:
+    - name: Remove ~/.ssh/known_hosts
+      command: "rm -f ~/.ssh/known_hosts"  
+  tags:
+    - node_deploy_masters   
+
+########
+# Wait node to be back online after boot. 
+# Run on masters
+########
+- hosts: masters
+  gather_facts: false
+  tasks:
+    - name: Wait for connection to host, retrying every 5 minutes for up to 30 minutes
+      wait_for_connection:
+        timeout: 120
+      retries: 6      # Retry 6 times (6 * 5 minutes = 30 minutes)
+      delay: 300      # 300 seconds (5 minutes) delay between retries
+      register: connection_check
+      until: connection_check is success
+  tags:
+    - node_deploy_masters   
+
+########
+# Shutdown node and wait for user to remove root disk from VM or change boot order
+# Run on masters
+########
+- hosts: masters
+  become: yes
+  roles:
+    - node_deploy
+  tags:
+    - node_deploy_masters  
+
+########
+# Repeat first step for worker nodes
+########
+- hosts: workers
+  become: yes
+  roles:
+    - burn_image
+  tags:
+    - burn_image_workers      
+
+- hosts: localhost
+  tasks:
+    - name: Remove ~/.ssh/known_hosts
+      command: "rm -f ~/.ssh/known_hosts"  
+  tags:
+    - node_deploy_workers   
+
+########
+# Wait node to be back online after boot. 
+# Run on workers
+########
+- hosts: workers
+  gather_facts: false
+  tasks:
+    - name: Wait for connection to host, retrying every 5 minutes for up to 30 minutes
+      wait_for_connection:
+        timeout: 120
+      retries: 6      # Retry 6 times (6 * 5 minutes = 30 minutes)
+      delay: 300      # 300 seconds (5 minutes) delay between retries
+      register: connection_check
+      until: connection_check is success
+  tags:
+    - node_deploy_workers 
+
+########
+# Shutdown node and wait for user to remove root disk from VM or change boot order
+# Run on workers
+########
+- hosts: workers
+  become: yes
+  roles:
+    - node_deploy    
+  tags:
+    - node_deploy_workers    

@@ -1,0 +1,17 @@
+---
+- name: Wait for SSH access to RHCOS node
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 22
+    state: started
+    timeout: 600
+
+- name: Shutdown the server
+  ansible.builtin.command: "sudo shutdown -h now"
+  async: 1
+  poll: 0
+  ignore_errors: true
+
+- name: Remove root disk from VM and start the VM with only the RHCOS disk
+  ansible.builtin.pause:
+    prompt: "Confirm that the root disk has been removed and you are ready to proceed. Type 'yes' to continue."

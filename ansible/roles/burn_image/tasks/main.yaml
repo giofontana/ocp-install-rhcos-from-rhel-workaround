@@ -1,0 +1,55 @@
+---
+- name: Gather facts about disks
+  ansible.builtin.setup:
+    gather_subset:
+      - hardware
+
+- name: "Create a new partition on the root disk /dev/{{ root_disk }}{{ iso_partition_number }}"
+  ansible.builtin.shell: |
+    echo -e "n\np\n{{ iso_partition_number }}\n\n+5G\nw" | fdisk /dev/{{ root_disk }}
+  args:
+    creates: "/dev/{{ root_disk }}{{ iso_partition_number }}"  # Ensures idempotency by only creating if it doesn't exist
+  register: partition_creation
+
+- name: Rescan partitions
+  ansible.builtin.shell: partprobe /dev/{{ root_disk }}
+  when: partition_creation.changed
+
+- name: Download customized ISO from web server
+  ansible.builtin.get_url:
+    url: http://10.0.1.2:8080/ocp-agn/rhcos-live.x86_64-custom.iso
+    dest: ~/rhcos-live.x86_64-custom.iso
+
+- name: "Burn the ISO to the new partition /dev/{{ root_disk }}{{ iso_partition_number }}"
+  ansible.builtin.command: "dd if=rhcos-live.x86_64-custom.iso of=/dev/{{ root_disk }}{{ iso_partition_number }} bs=4M status=progress"
+  args:
+    chdir: ~/  # Specify the appropriate directory  
+
+- name: Add custom GRUB entry for RHCOS
+  ansible.builtin.lineinfile:
+    path: /etc/grub.d/40_custom
+    line: |
+      menuentry 'RHCOS' {
+          set root={{ grub_root }}
+          linux /images/pxeboot/vmlinuz root=/dev/{{ root_disk }}{{ iso_partition_number }} rw coreos.liveiso=rhcos-416.94.202406251923-0 ignition.firstboot coreos.inst.ignition_url={{ ignition_url }} coreos.inst.install_dev=/dev/{{ rhcos_disk }} coreos.inst.skip_reboot
+          initrd /images/pxeboot/initrd.img /images/ignition.img
+      }
+    create: yes
+    insertafter: EOF    
+
+- name: Set RHCOS as the default boot option
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_DEFAULT='
+    line: 'GRUB_DEFAULT="RHCOS"'
+
+- name: Update GRUB configuration
+  ansible.builtin.shell: |
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+    grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+
+- name: Reboot the server
+  ansible.builtin.command: "sudo reboot"
+  async: 1
+  poll: 0
+  ignore_errors: true

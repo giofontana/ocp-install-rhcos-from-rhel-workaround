@@ -1,0 +1,29 @@
+[bastion]
+net-services.gfontana.me ansible_host=10.0.1.2 ansible_user=root ansible_password=R3dh4t1!
+
+[bootstrap]
+bootstrap.tintin.lab.gfontana.me ansible_host=10.1.10.10 ansible_user=core ansible_password=R3dh4t1!
+
+[bootstrap:vars]
+ignition_url=http://10.0.1.2:8080/ocp-agn/bootstrap.ign
+
+[masters]
+master1.tintin.lab.gfontana.me ansible_host=10.1.10.11 ansible_user=core ansible_password=R3dh4t1!
+master2.tintin.lab.gfontana.me ansible_host=10.1.10.12 ansible_user=core ansible_password=R3dh4t1!
+master3.tintin.lab.gfontana.me ansible_host=10.1.10.13 ansible_user=core ansible_password=R3dh4t1!
+
+[masters:vars]
+ignition_url=http://10.0.1.2:8080/ocp-agn/master.ign
+
+[workers]
+worker1.tintin.lab.gfontana.me ansible_host=10.1.10.14 ansible_user=core ansible_password=R3dh4t1!
+worker2.tintin.lab.gfontana.me ansible_host=10.1.10.15 ansible_user=core ansible_password=R3dh4t1!
+
+[workers:vars]
+ignition_url=http://10.0.1.2:8080/ocp-agn/worker.ign
+
+[all:vars]
+root_disk=vda
+iso_partition_number=4
+rhcos_disk=vdc
+grub_root="(hd0,4)"

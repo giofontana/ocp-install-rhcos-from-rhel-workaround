@@ -1,0 +1,46 @@
+---
+- name: Install coreos-installer
+  ansible.builtin.yum:
+    name: coreos-installer
+    state: present
+
+- name: Download OpenShift installer tarball
+  ansible.builtin.get_url:
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.16.19/openshift-install-linux.tar.gz"
+    dest: /tmp/openshift-install-linux.tar.gz
+
+- name: Extract OpenShift installer
+  ansible.builtin.unarchive:
+    src: /tmp/openshift-install-linux.tar.gz
+    dest: /usr/bin/
+    remote_src: yes
+
+- name: Clean up files from last attempt
+  command: "rm -rf rhcos-live.x86_64-custom.iso rhcos-live.x86_64.iso post-install.sh"
+  args:
+    chdir: ~/
+
+- name: Download RHCOS ISO
+  ansible.builtin.shell: |
+    ISO_URL=$(openshift-install coreos print-stream-json | grep '\.iso[^.]' | grep x86 | grep -oP '"location":\s*"\K[^"]+')
+    wget -O rhcos-live.x86_64.iso "$ISO_URL"
+  args:
+    chdir: ~/
+
+- name: Copy post-install.sh to the bastion server
+  ansible.builtin.copy:
+    src: post-install.sh
+    dest: ~/post-install.sh
+    mode: '0755'
+
+- name: Customize RHCOS ISO with post-install script
+  ansible.builtin.shell: |
+    coreos-installer iso customize --post-install ./post-install.sh rhcos-live.x86_64.iso -o rhcos-live.x86_64-custom.iso
+  args:
+    chdir: ~/  # Specify the appropriate directory
+
+- name: Copy customized ISO to web server
+  ansible.builtin.copy:
+    src: ~/rhcos-live.x86_64-custom.iso
+    dest: /var/www/html/ocp-agn/
+    remote_src: yes
